@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+*.plist
+*aoc
+*main
+*.DS_Store
