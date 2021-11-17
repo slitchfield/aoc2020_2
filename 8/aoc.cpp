@@ -40,48 +40,37 @@ unsigned int count_substr(const char* input, const char* sub) {
     return i;
 }
 
-std::pair<std::string, unsigned int> get_pair(std::string in) {
-    if(in.back() == '.') in.pop_back();
-    if(in.back() == 's') in.pop_back();
-
-    size_t stop = in.find(' ');
-    unsigned int count = atoi(in.substr(0, stop).c_str());
-    std::string bag = in.substr(stop+1);
-
-    return {bag, count};
-}
-
 struct input_elem parse_elem(char* line) {
     struct input_elem ret;
     std::string strline = line;
-    size_t cur_end = strline.find(" contain");
-    ret.container = new std::string(strline.substr(0, cur_end - 1));
-
-    ret.contains = new std::vector<std::pair<std::string, unsigned int>>();
-
-    cur_end = strline.find(" contain ");
-    cur_end += strlen(" contain ");
-    size_t next_end;
-    std::string bag_num_pair;
-    while( (next_end = strline.find(',', cur_end)) != std::string::npos ) {
-        bag_num_pair = strline.substr(cur_end, next_end - cur_end);
-        ret.contains->push_back(get_pair(bag_num_pair));
-        cur_end = next_end + 2;
+    size_t spacepos = strline.find(' ');
+    std::string typestr = strline.substr(0, spacepos);
+    
+    if(typestr.compare("acc") == 0) {
+        ret.type = ACC;
+    } else if (typestr.compare("nop") == 0) {
+        ret.type = NOP;
+    } else if (typestr.compare("jmp") == 0) {
+        ret.type = JMP;
+    } else {
+        ret.type = UNDEF;
     }
 
-    bag_num_pair = strline.substr(cur_end);
-    ret.contains->push_back(get_pair(bag_num_pair));
+    std::string numstr = strline.substr(spacepos);
+    ret.value = atoi(numstr.c_str());
+
+    ret.times_visited = 0;
+    ret.accum_when_visited = 0;
 
     print_elem(ret);
     return ret;
 }
 
 void print_elem(struct input_elem in) {
-    printf("%s contains:\n", in.container->c_str());
-    for(auto iter: *in.contains) {
-        printf("\t%d %s\n", iter.second, iter.first.c_str());
-    }
-    printf("\n");
+    if(in.type == ACC) printf("{%d} ACC %d\n", in.times_visited, in.value);
+    if(in.type == NOP) printf("{%d} NOP %d\n", in.times_visited, in.value);
+    if(in.type == JMP) printf("{%d} JMP %d\n", in.times_visited, in.value);
+    if(in.type == UNDEF) printf("===== UNDEF =====\n");
 }
 
 char** tokenize_elems(const char* filename, int* num_elems) {
@@ -171,9 +160,9 @@ char** tokenize_elems(const char* filename, int* num_elems) {
 
 struct input_arr read_inputfile(const char* filename) {
     struct input_arr ret;
-
-    ret.arr = NULL;
     ret.num_elems = 0;
+    ret.pstate.pc = 0;
+    ret.pstate.accum = 0;
 
     char** token_list = tokenize_elems(filename, &ret.num_elems);
 
@@ -190,12 +179,7 @@ struct input_arr read_inputfile(const char* filename) {
     free(token_list);
 
     // Do any post processing necessary
-    for(auto item: ret.vec) {
-        for(auto subitem: *item.contains) {
-            ret.k_contains_v[*item.container].push_back(subitem);
-            ret.k_containedby_v[subitem.first].push_back({*item.container, subitem.second});
-        }
-    }
+
     return ret;
 }
 
@@ -218,8 +202,6 @@ void replace_char(char* str, char find, char replace) {
 
 void free_elem(struct input_elem in) {
     // UPDATE: Free any internal allocations
-    delete in.container;
-    delete in.contains;
 }
 
 void free_input(struct input_arr in) {

@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     double part_two_time = (double)(end - begin) / CLOCKS_PER_SEC;
 
     printf("Part One Answer (%.6fs):\t%d\n", part_one_time, part_one_answer);
-    printf("Part Two Answer (%.6fs):\t%llu\n", part_two_time, part_two_answer);
+    printf("Part Two Answer (%.6fs):\t%d\n", part_two_time, part_two_answer);
 
     free_input(input);
 
