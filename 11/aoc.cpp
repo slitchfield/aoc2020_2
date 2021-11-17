@@ -227,7 +227,7 @@ bool diff_seatmaps(std::vector<std::vector<seat_state_t>>* a,
     for(int r = 0; r < a->size(); r++) {
         for(int c = 0; c < a->at(r).size(); c++) {
             if(a->at(r)[c] != b->at(r)[c]) {
-                printf("Found difference @ %d,%d\n", r, c);
+                //printf("Found difference @ %d,%d\n", r, c);
                 return true;
             }
         }

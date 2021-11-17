@@ -116,7 +116,7 @@ int count_occupied(std::vector<std::vector<seat_state_t>>* m) {
 }
 
 int part_one(struct input_arr input) {
-    // Corrupt nxt_ptr initially to force first iteration
+    // Iterate while evolve_seatmap creates differences 
     bool still_different = true;
     while(still_different) {
         evolve_seatmap(&input);
@@ -137,13 +137,100 @@ int part_one(struct input_arr input) {
 size_t get_num_neighbors_2(std::vector<std::vector<seat_state_t>>* seatmap, size_t row, size_t col) {
     // TODO: change from looking at nearest 8 to casting rays in 8 dirs and
     //  finding closest non-floor
-    return 0;
+    size_t num_neighbors = 0;
+
+    std::vector<std::pair<int, int>> dirs = {
+        {-1, -1},
+        {-1, 0},
+        {-1, 1},
+        {0, -1},
+        {0, 1},
+        {1, -1},
+        {1, 0},
+        {1, 1}
+    };
+    size_t num_rows = seatmap->size();
+    size_t num_cols = seatmap->at(0).size();
+
+    for(auto dir: dirs) {
+        int cur_row = row + dir.first;
+        int cur_col = col + dir.second;
+        while( (cur_row >= 0 && cur_row < num_rows) &&
+               (cur_col >= 0 && cur_col < num_cols) ) {
+            seat_state_t cur_state = seatmap->at(cur_row)[cur_col];
+
+            // If this seat is occupied, we found a neighbor
+            if(cur_state == OCCUPIED) {
+                num_neighbors += 1;
+                break;
+
+            // If this seat is empty, no neighbor, but we're done with this direction
+            } else if(cur_state == EMPTY) {
+                break;
+
+            // Otherwise keep moving along the direction
+            } else {
+                cur_row += dir.first;
+                cur_col += dir.second; 
+            }
+        }
+    }
+    return num_neighbors;
 }
 
-void evolve_seatmap_2(struct input_arr* in) {
+void evolve_seatmap_2(struct input_arr* input) {
     // TODO: change rules to 5 or more neighbors
+    size_t num_rows = input->cur_ptr->size();
+    size_t num_cols = input->cur_ptr->at(0).size();
+
+    for(int row = 0; row < num_rows; row++) {
+        for(int col = 0; col < num_cols; col++) {
+            seat_state_t cur_state = input->cur_ptr->at(row)[col];
+            size_t num_neighbors = get_num_neighbors_2(input->cur_ptr, row, col);
+            if      ( (cur_state == EMPTY) && 
+                      (num_neighbors == 0) ) {
+                input->nxt_ptr->at(row)[col] = OCCUPIED;
+            }
+            else if ( (cur_state == OCCUPIED) &&
+                      (num_neighbors >= 5) ) {
+                input->nxt_ptr->at(row)[col] = EMPTY;
+            } else {
+                input->nxt_ptr->at(row)[col] = input->cur_ptr->at(row)[col];
+            }
+        }
+    }
 }
 
 uint64_t part_two(struct input_arr input) {
-    return 0;
+
+    // Reset the seat map
+    for(int i = 0; i < input.seat_array_a.size(); i++) {
+        for(int j = 0; j < input.seat_array_a[i].size(); j++) {
+            if (input.seat_array_a[i][j] == OCCUPIED) {
+                input.seat_array_a[i][j] = EMPTY;
+                input.seat_array_b[i][j] = EMPTY;
+            }
+        }
+    }
+    // Passing input by value invalidates these pointers
+    // This isn't great, tbh
+    input.cur_ptr = &input.seat_array_a;
+    input.nxt_ptr = &input.seat_array_b;
+
+    // Iterate while evolve_seatmap creates differences 
+    bool still_different = true;
+    while(still_different) {
+        evolve_seatmap_2(&input);
+        //printf("Cur map:\n");
+        //print_seatmap(input.cur_ptr);
+
+        //printf("Nxt map:\n");
+        //print_seatmap(input.nxt_ptr);
+
+        still_different = diff_seatmaps(input.cur_ptr, input.nxt_ptr);
+        swap_ptrs(&input);
+        //print_input(input);
+    }
+
+    return count_occupied(input.cur_ptr);
 }
